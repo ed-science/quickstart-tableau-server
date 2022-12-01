@@ -71,10 +71,7 @@ def is_windows():
 
 #   Define where the tmp directory is
 def get_tmp_path():
-    if is_windows():
-        return "C:\\tabsetup\\"
-    else:
-        return "/tmp/"
+    return "C:\\tabsetup\\" if is_windows() else "/tmp/"
 
 #########################
 #   Business Logic      #
@@ -99,10 +96,11 @@ def get_loadbalancer_targets(target_group_arn, region):
     targets = elb_client.describe_target_health(TargetGroupArn=target_group_arn)
 
     #   Get just the instance Ids as an array
-    ids = []
-    for target in targets['TargetHealthDescriptions']:
-        if target['TargetHealth']['Status'] != "draining":
-            ids.append(target['Target']['Id'])
+    ids = [
+        target['Target']['Id']
+        for target in targets['TargetHealthDescriptions']
+        if target['TargetHealth']['Status'] != "draining"
+    ]
 
     log(message=f"Found {len(ids)} instances registered to the target group ${target_group_arn}")
     return ids

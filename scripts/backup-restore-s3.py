@@ -72,21 +72,18 @@ def is_windows():
 
 #   Define where the tmp directory is
 def get_tmp_path():
-    if is_windows():
-        return "C:\\tabsetup\\"
-    else:
-        return "/tmp/"
+    return "C:\\tabsetup\\" if is_windows() else "/tmp/"
 
 #   Get TSM's full path
 def get_tsm_path():
-    
+
     #   Define the glob expression, based on the OS
     glob_exp = ""
     if is_windows():
         glob_exp = "C:\\tableau\\packages\\[b][i][n][.]*\\[t][s][m][.]*"
     else: 
         glob_exp = "/opt/tableau/tableau_server/packages/[b][i][n][.]*/[t][s][m]*"
-    
+
     #   Evaluate the path
     path = glob.glob(glob_exp)
 
@@ -113,15 +110,7 @@ def backup_full_path(tsm):
     #   Get the path to backup files from TSM
     path = exec_tsm(tsm, "configuration", "get", "-k", "basefilepath.backuprestore")
 
-    #   Clean up the response text
-    clean_path = path.replace("\r","").replace("\n","")
-
-    #if is_windows():
-    #    return os.path.join("C:\\ProgramData", "Tableau", "Tableau Server", "data", "tabsvc", "files", "backups",filename)
-    #else:
-    #    return os.path.join("/var","opt","tableau","tableau_server","data","tabsvc","files","backups",filename)
-
-    return clean_path
+    return path.replace("\r","").replace("\n","")
 
 #########################
 #   Business Logic      #
@@ -186,6 +175,7 @@ def restore(tsm, bucket_name, s3_prefix):
         #   Sort both lists based on last updated date
         def sort_key(obj):
             return obj.get("LastModified")
+
         tsbaks.sort(key=sort_key)
         settings.sort(key=sort_key)
 
@@ -193,7 +183,7 @@ def restore(tsm, bucket_name, s3_prefix):
         s3_resource = boto3.resource('s3')
 
         #   Download/Restore from tsbak
-        if len(tsbaks)>0:
+        if tsbaks:
             #   Get the local and remote paths
             local_backup_path = os.path.join(backup_full_path(tsm=tsm), "backup.tsbak")
             s3_backup_path = tsbaks[0]['Key']
@@ -203,9 +193,9 @@ def restore(tsm, bucket_name, s3_prefix):
             exec_tsm(tsm, "maintenance", "restore", "--file", "backup.tsbak")
             #   Cleanup file
             os.remove(local_backup_path)
-        
+
         #   Download/Restore from settings.json
-        if len(settings)>0:
+        if settings:
             #   Get the local and remote paths
             local_backup_path = os.path.join(get_tmp_path(), "settings.json")
             s3_backup_path = settings[0]['Key']
