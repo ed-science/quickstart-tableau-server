@@ -90,14 +90,11 @@ def get_instance_volumes(instance_id, region):
     #   Get all volumes associated with this instance
     volumes = ec2_client.describe_instance_attribute(InstanceId=instance_id, Attribute='blockDeviceMapping')
 
-    #   Parse out just the IDs for each volume
-    volume_ids = []
-    for volume in volumes['BlockDeviceMappings']:
-        if volume['Ebs']:
-            volume_ids.append(volume['Ebs']['VolumeId'])
-    
-    #   Return a list of volume IDs
-    return volume_ids
+    return [
+        volume['Ebs']['VolumeId']
+        for volume in volumes['BlockDeviceMappings']
+        if volume['Ebs']
+    ]
 
 #   Apply a tag for a given EC2 instance
 def apply_tag(id, tag_name, tag_value, region):
